@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM Inventory Audit Preview</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Font: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- React and ReactDOM for UI rendering -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel for JSX transpilation in the browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        /* Applying the Inter font globally */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- The root element where the React app will be mounted -->
+    <div id="root"></div>
+
+    <!-- The React code, wrapped in a script tag with type "text/babel" -->
+    <script type="text/babel">
+
+// Mock Data for the prototype
+const initialMockAudits = [
+  {
+    id: 'AUD001',
+    locationName: 'Alpha Franchise',
+    locationSapCode: 'SAP123',
+    kaeName: 'John Doe',
+    kamName: 'Jane Smith',
+    startDate: '2025-06-01',
+    endDate: '2025-06-05',
+    auditType: 'Complete Asset Audit',
+    overallStatus: 'Ready for Report',
+    socCount: 15,
+    harnessCount: 20,
+    assets: [
+      { serialNo: 'BAT001', make: 'Exide', model: 'X100', category: 'Battery', qrAvailable: 'Yes', auditStatus: 'Asset Verified', photoUrl: '', rejectionReason: '' },
+      { serialNo: 'CHR005', make: 'Luminous', model: 'C200', category: 'Charger', qrAvailable: 'No', auditStatus: 'Verification Pending', photoUrl: 'https://placehold.co/150x150/e0e0e0/333?text=Asset+Photo', rejectionReason: '' },
+      { serialNo: 'BAT002', make: 'Amaron', model: 'A300', category: 'Battery', qrAvailable: 'Yes', auditStatus: 'Asset Verified', photoUrl: '', rejectionReason: '' },
+      { serialNo: 'BATNEW01', make: 'New Make', model: 'New Model', category: 'Battery', qrAvailable: 'No', auditStatus: '+Add Asset Pending Approval', photoUrl: 'https://placehold.co/150x150/e0e0e0/333?text=New+Asset', rejectionReason: '' },
+      { serialNo: 'HARN01', make: 'Generic', model: 'Standard', category: 'Harness', qrAvailable: 'Yes', auditStatus: 'Asset Verified', photoUrl: '', rejectionReason: '' },
+    ],
+  },
+  {
+    id: 'AUD002',
+    locationName: 'Warehouse Central',
+    locationSapCode: 'WH001',
+    kaeName: 'Alice Green',
+    kamName: 'Bob White',
+    startDate: '2025-06-10',
+    endDate: '2025-06-12',
+    auditType: 'Partial Asset Audit (Idle)',
+    overallStatus: 'Audit In Progress',
+    socCount: 5,
+    harnessCount: 10,
+    assets: [
+      { serialNo: 'BAT010', make: 'Exide', model: 'X100', category: 'Battery', qrAvailable: 'Yes', auditStatus: 'Audit Pending', photoUrl: '', rejectionReason: '' },
+      { serialNo: 'CHR011', make: 'Luminous', model: 'C200', category: 'Charger', qrAvailable: 'No', auditStatus: 'Audit Pending', photoUrl: '', rejectionReason: '' },
+      { serialNo: 'SOC001', make: 'Generic', model: 'V1', category: 'SOC Meter', qrAvailable: 'Yes', auditStatus: 'Audit Pending', photoUrl: '', rejectionReason: '' },
+    ],
+  },
+  {
+    id: 'AUD003',
+    locationName: 'Sigma Plant',
+    locationSapCode: 'PLT007',
+    kaeName: 'Charlie Brown',
+    kamName: 'Diana Prince',
+    startDate: '2025-06-15',
+    endDate: '2025-06-18',
+    auditType: 'Complete Asset Audit',
+    overallStatus: 'Pending Approval',
+    socCount: 8,
+    harnessCount: 12,
+    assets: [
+      { serialNo: 'BAT020', make: 'PowerMax', model: 'P500', category: 'Battery', qrAvailable: 'Yes', auditStatus: 'Asset Verified', photoUrl: '', rejectionReason: '' },
+      { serialNo: 'CHR021', make: 'VoltCorp', model: 'V300', category: 'Charger', qrAvailable: 'No', auditStatus: 'Verification Pending', photoUrl: 'https://placehold.co/150x150/e0e0e0/333?text=Asset+Photo', rejectionReason: '' },
+    ],
+  },
+  {
+    id: 'AUD004',
+    locationName: 'Gamma Franchise',
+    locationSapCode: 'SAP456',
+    kaeName: 'Eve Adams',
+    kamName: 'Frank King',
+    startDate: '2025-06-20',
+    endDate: '2025-06-22',
+    auditType: 'Partial Asset Audit (Deployed)',
+    overallStatus: 'Rejected',
+    socCount: 2,
+    harnessCount: 5,
+    assets: [
+      { serialNo: 'BAT030', make: 'MegaVolt', model: 'M700', category: 'Battery', qrAvailable: 'Yes', auditStatus: 'Asset Verified', photoUrl: '', rejectionReason: '' },
+    ],
+  },
+];
+
+// Mock data for FP/Warehouse/Plant locations and KAE/AM tagging
+const mockLocations = [
+    { id: 'FP1', name: 'Alpha Franchise', sapCode: 'SAP123', type: 'FP', kae: 'John Doe', am: 'Jane Smith' },
+    { id: 'WH1', name: 'Warehouse Central', sapCode: 'WH001', type: 'Warehouse', kae: 'Alice Green', am: 'Bob White' },
+    { id: 'PLT1', name: 'Sigma Plant', sapCode: 'PLT007', type: 'Plant', kae: 'Charlie Brown', am: 'Diana Prince' },
+    { id: 'FP2', name: 'Gamma Franchise', sapCode: 'SAP456', type: 'FP', kae: 'Eve Adams', am: 'Frank King' },
+    { id: 'WH2', name: 'Warehouse North', sapCode: 'WH002', type: 'Warehouse', kae: 'Grace Hopper', am: 'Hal Finch' },
+];
+
+// Dummy inventory to be fetched
+const dummyFetchedInventory = [
+  { serialNo: 'FETC001', make: 'PowerCorp', model: 'P100', category: 'Battery', qrAvailable: 'Yes', auditStatus: 'Audit Pending', photoUrl: '', rejectionReason: '' },
+  { serialNo: 'FETC002', make: 'ChargeRite', model: 'CR50', category: 'Charger', qrAvailable: 'No', auditStatus: 'Audit Pending', photoUrl: 'https://placehold.co/100x100?text=Fetched+Asset', rejectionReason: '' },
+  { serialNo: 'FETC003', make: 'VoltPro', model: 'VP200', category: 'Battery', qrAvailable: 'Yes', auditStatus: 'Audit Pending', photoUrl: '', rejectionReason: '' },
+  { serialNo: 'FETC004', make: 'SOCX', model: 'S1', category: 'SOC Meter', qrAvailable: 'Yes', auditStatus: 'Audit Pending', photoUrl: '', rejectionReason: '' },
+  { serialNo: 'FETC005', make: 'LinkConnect', model: 'H1', category: 'Harness', qrAvailable: 'Yes', auditStatus: 'Audit Pending', photoUrl: '', rejectionReason: '' },
+];
+
+
+// Component for displaying asset details in a pop-up
+const AssetDetailsModal = ({ asset, onClose }) => {
+  if (!asset) return null;
+
+  return (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50 flex justify-center items-center p-4">
+      <div className="relative p-8 bg-white w-full max-w-lg mx-auto rounded-lg shadow-xl transform transition-all">
+        <h3 className="text-xl font-semibold text-gray-800 mb-6">Asset Details: {asset.serialNo}</h3>
+        <div className="space-y-3 text-gray-700 mb-6">
+          <p><strong>Asset Category:</strong> {asset.category}</p>
+          <p><strong>Asset Make:</strong> {asset.make}</p>
+          <p><strong>Asset Model:</strong> {asset.model}</p>
+          <p><strong>QR Code Available:</strong> {asset.qrAvailable}</p>
+          <p className="flex items-center"><strong>Audit Status:</strong> <span className={`ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+            asset.auditStatus === 'Asset Verified' ? 'bg-green-100 text-green-800' :
+            asset.auditStatus.includes('Pending Approval') || asset.auditStatus === 'Verification Pending' ? 'bg-orange-100 text-orange-800' :
+            asset.auditStatus === 'Audit Pending' ? 'bg-yellow-100 text-yellow-800' :
+            asset.auditStatus === 'Asset Mismatch' ? 'bg-red-100 text-red-800' :
+            'bg-gray-100 text-gray-800'
+          }`}>{asset.auditStatus}</span></p>
+          {asset.photoUrl && (
+            <div>
+              <strong>Photo:</strong>
+              <img src={asset.photoUrl} alt="Asset Audit" className="mt-2 w-full h-48 object-cover rounded-md border" />
+            </div>
+          )}
+          {asset.rejectionReason && (
+            <p><strong>Rejection Reason:</strong> <span className="text-red-600">{asset.rejectionReason}</span></p>
+          )}
+        </div>
+        <button
+          onClick={onClose}
+          className="mt-4 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Component for rejection reason input
+const RejectionReasonModal = ({ assetSerialNo, onConfirm, onCancel }) => {
+  const [reason, setReason] = React.useState('');
+  const [error, setError] = React.useState('');
+
+  const handleSubmit = () => {
+    if (reason.trim()) {
+      onConfirm(assetSerialNo, reason);
+    } else {
+      setError('Please enter a rejection reason.');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50 flex justify-center items-center p-4">
+      <div className="relative p-8 bg-white w-full max-w-md mx-auto rounded-lg shadow-xl">
+        <h3 className="text-xl font-semibold text-gray-800 mb-4">Reject Asset: {assetSerialNo}</h3>
+        <p className="text-gray-700 mb-3">Please provide a reason for rejecting this asset:</p>
+        <textarea
+          className={`w-full p-2 border ${error ? 'border-red-500' : 'border-gray-300'} rounded-md mb-2 focus:ring-red-500 focus:border-red-500`}
+          rows="4"
+          value={reason}
+          onChange={(e) => {
+              setReason(e.target.value);
+              if (error) setError('');
+          }}
+          placeholder="e.g., Serial number mismatch, Damaged asset, Photo unclear"
+        ></textarea>
+        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+        <div className="flex justify-end space-x-3 mt-4">
+          <button
+            onClick={onCancel}
+            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors duration-200"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors duration-200"
+          >
+            Confirm Rejection
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// A simple notification component to replace alert()
+const Notification = ({ message, type, onDismiss }) => {
+    if (!message) return null;
+
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            onDismiss();
+        }, 3000); // Auto-dismiss after 3 seconds
+        return () => clearTimeout(timer);
+    }, [onDismiss]);
+    
+    const bgColor = type === 'error' ? 'bg-red-500' : 'bg-green-500';
+
+    return (
+        <div className={`fixed top-5 right-5 ${bgColor} text-white py-3 px-5 rounded-lg shadow-lg z-50`}>
+            {message}
+        </div>
+    );
+};
+
+// Component for creating a new audit profile
+const CreateAuditForm = ({ onAuditCreate, onCancelCreate, mockLocations, existingAudits }) => {
+  const [locationType, setLocationType] = React.useState('');
+  const [selectedLocationId, setSelectedLocationId] = React.useState('');
+  const [kaeName, setKaeName] = React.useState('');
+  const [amName, setAmName] = React.useState('');
+  const [auditStartDate, setAuditStartDate] = React.useState(new Date().toISOString().split('T')[0]);
+  const [auditEndDate, setAuditEndDate] = React.useState(new Date().toISOString().split('T')[0]);
+  const [auditType, setAuditType] = React.useState('Complete Asset Audit');
+  const [partialAuditType, setPartialAuditType] = React.useState('');
+  const [notification, setNotification] = React.useState({message: '', type: ''});
+
+  const filteredLocations = mockLocations.filter(loc => loc.type === locationType);
+
+  React.useEffect(() => {
+    // Auto-fill KAE and AM names based on selected location
+    const selectedLoc = mockLocations.find(loc => loc.id === selectedLocationId);
+    if (selectedLoc) {
+      setKaeName(selectedLoc.kae);
+      setAmName(selectedLoc.am);
+    } else {
+      setKaeName('');
+      setAmName('');
+    }
+  }, [selectedLocationId, mockLocations]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!locationType || !selectedLocationId || !auditStartDate || !auditEndDate || !auditType || (auditType === 'Partial Asset Audit' && !partialAuditType)) {
+      setNotification({message: 'Please fill all required fields.', type: 'error'});
+      return;
+    }
+
+    const newAudit = {
+      id: `AUD${String(existingAudits.length + 1).padStart(3, '0')}`, // Simple ID generation
+      locationName: mockLocations.find(loc => loc.id === selectedLocationId).name,
+      locationSapCode: mockLocations.find(loc => loc.id === selectedLocationId).sapCode,
+      kaeName: kaeName,
+      kamName: amName,
+      startDate: auditStartDate,
+      endDate: auditEndDate,
+      auditType: auditType + (auditType === 'Partial Asset Audit' ? ` (${partialAuditType})` : ''),
+      overallStatus: 'Inventory Pending', // New audits start in 'Inventory Pending' status
+      socCount: 0,
+      harnessCount: 0,
+      assets: [], // Start with an empty array of assets
+    };
+    onAuditCreate(newAudit);
+  };
+
+  return (
+    <div className="bg-white p-6 rounded-lg shadow-md max-w-2xl mx-auto">
+      <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({message: '', type:''})} />
+      <h2 className="text-2xl font-semibold text-gray-800 mb-6">Create New Audit Profile</h2>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-gray-700 text-sm font-bold mb-2">Location Type:</label>
+          <div className="flex flex-wrap gap-4">
+            <label className="inline-flex items-center"><input type="radio" className="form-radio" name="locationType" value="FP" checked={locationType === 'FP'} onChange={(e) => { setLocationType(e.target.value); setSelectedLocationId(''); }} /><span className="ml-2">Franchise Partner</span></label>
+            <label className="inline-flex items-center"><input type="radio" className="form-radio" name="locationType" value="Warehouse" checked={locationType === 'Warehouse'} onChange={(e) => { setLocationType(e.target.value); setSelectedLocationId(''); }} /><span className="ml-2">Warehouse</span></label>
+            <label className="inline-flex items-center"><input type="radio" className="form-radio" name="locationType" value="Plant" checked={locationType === 'Plant'} onChange={(e) => { setLocationType(e.target.value); setSelectedLocationId(''); }} /><span className="ml-2">Plant</span></label>
+          </div>
+        </div>
+
+        {locationType && (
+          <div>
+            <label htmlFor="locationSelect" className="block text-gray-700 text-sm font-bold mb-2">{locationType} Name / SAP Code:</label>
+            <select id="locationSelect" className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={selectedLocationId} onChange={(e) => setSelectedLocationId(e.target.value)} required>
+              <option value="">Select {locationType}</option>
+              {filteredLocations.map(loc => (<option key={loc.id} value={loc.id}>{loc.name} ({loc.sapCode})</option>))}
+            </select>
+          </div>
+        )}
+
+        <div><label className="block text-gray-700 text-sm font-bold mb-2">KAE Name:</label><input type="text" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 bg-gray-100 leading-tight focus:outline-none focus:shadow-outline" value={kaeName} readOnly /></div>
+        <div><label className="block text-gray-700 text-sm font-bold mb-2">AM Name:</label><input type="text" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 bg-gray-100 leading-tight focus:outline-none focus:shadow-outline" value={amName} readOnly /></div>
+        <div><label htmlFor="auditStartDate" className="block text-gray-700 text-sm font-bold mb-2">Audit Start Date:</label><input type="date" id="auditStartDate" className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={auditStartDate} onChange={(e) => setAuditStartDate(e.target.value)} required /></div>
+        <div><label htmlFor="auditEndDate" className="block text-gray-700 text-sm font-bold mb-2">Audit End Date:</label><input type="date" id="auditEndDate" className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={auditEndDate} onChange={(e) => setAuditEndDate(e.target.value)} required /></div>
+
+        <div>
+          <label className="block text-gray-700 text-sm font-bold mb-2">Audit Type:</label>
+          <div className="flex space-x-4">
+            <label className="inline-flex items-center"><input type="radio" className="form-radio" name="auditType" value="Complete Asset Audit" checked={auditType === 'Complete Asset Audit'} onChange={(e) => { setAuditType(e.target.value); setPartialAuditType(''); }} /><span className="ml-2">Complete Asset Audit</span></label>
+            <label className="inline-flex items-center"><input type="radio" className="form-radio" name="auditType" value="Partial Asset Audit" checked={auditType === 'Partial Asset Audit'} onChange={(e) => setAuditType(e.target.value)} /><span className="ml-2">Partial Asset Audit</span></label>
+          </div>
+        </div>
+
+        {auditType === 'Partial Asset Audit' && (
+          <div>
+            <label htmlFor="partialAuditType" className="block text-gray-700 text-sm font-bold mb-2">Select Inventory Type:</label>
+            <select id="partialAuditType" className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={partialAuditType} onChange={(e) => setPartialAuditType(e.target.value)} required={auditType === 'Partial Asset Audit'}>
+              <option value="">Select...</option>
+              <option value="Idle">Idle</option>
+              <option value="Deployed">Deployed</option>
+              <option value="RMT">RMT</option>
+            </select>
+          </div>
+        )}
+
+        <div className="flex justify-end space-x-3 pt-4">
+          <button type="button" onClick={onCancelCreate} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors duration-200">Cancel</button>
+          <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors duration-200">Create Audit</button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+
+// Main App Component
+const App = () => {
+  // State for managing current view: 'home', 'list', 'detail', 'create-audit'
+  const [currentView, setCurrentView] = React.useState('home');
+  // State for storing the ID of the currently selected audit for detail view
+  const [selectedAuditId, setSelectedAuditId] = React.useState(null);
+  // State for audits, allowing local updates for prototype purposes
+  const [audits, setAudits] = React.useState(initialMockAudits);
+  // State for search and filter (UI only)
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [filterStatus, setFilterStatus] = React.useState('All');
+  // State for notification message
+  const [notification, setNotification] = React.useState({message: '', type: ''});
+
+  // State for Asset Details Modal
+  const [showAssetDetailsModal, setShowAssetDetailsModal] = React.useState(false);
+  const [selectedAssetForDetails, setSelectedAssetForDetails] = React.useState(null);
+
+  // State for Rejection Reason Modal
+  const [showRejectionReasonModal, setShowRejectionReasonModal] = React.useState(false);
+  const [assetToRejectSerialNo, setAssetToRejectSerialNo] = React.useState(null);
+
+  // Calculate dashboard summary counts
+  const totalAudits = audits.length;
+  const inProgressAudits = audits.filter(a => a.overallStatus === 'Audit In Progress').length;
+  const pendingApprovalAudits = audits.filter(a => a.overallStatus === 'Pending Approval').length;
+  const readyForReportAudits = audits.filter(a => a.overallStatus === 'Ready for Report').length;
+  const completedAudits = audits.filter(a => a.overallStatus === 'Approved').length;
+  const rejectedAudits = audits.filter(a => a.overallStatus === 'Rejected').length;
+
+  // Function to handle opening asset details modal
+  const handleViewAssetDetails = (asset) => {
+    setSelectedAssetForDetails(asset);
+    setShowAssetDetailsModal(true);
+  };
+
+  // Function to handle closing asset details modal
+  const handleCloseAssetDetailsModal = () => {
+    setShowAssetDetailsModal(false);
+    setSelectedAssetForDetails(null);
+  };
+
+  // Function to handle initiating asset rejection (opens reason modal)
+  const handleRejectAssetClick = (serialNo) => {
+    setAssetToRejectSerialNo(serialNo);
+    setShowRejectionReasonModal(true);
+  };
+
+  // Function to handle confirming asset rejection with a reason
+  const handleConfirmRejection = (serialNo, reason) => {
+    setAudits(prevAudits =>
+      prevAudits.map(audit =>
+        audit.id === selectedAuditId // Ensure we're updating the correct audit
+          ? {
+              ...audit,
+              assets: audit.assets.map(asset =>
+                asset.serialNo === serialNo ? { ...asset, auditStatus: 'Asset Mismatch', rejectionReason: reason } : asset
+              ),
+            }
+          : audit
+      )
+    );
+    setShowRejectionReasonModal(false);
+    setAssetToRejectSerialNo(null);
+  };
+
+  // Function to cancel rejection
+  const handleCancelRejection = () => {
+    setShowRejectionReasonModal(false);
+    setAssetToRejectSerialNo(null);
+  };
+
+  // Function to handle approving/rejecting assets within an audit detail
+  const handleAssetApproval = (auditId, assetSerialNo, newStatus) => {
+    if (newStatus === 'Asset Mismatch') {
+        // If it's a reject, open the reason modal instead of directly updating
+        handleRejectAssetClick(assetSerialNo);
+    } else {
+        // For approval
+        setAudits(prevAudits =>
+            prevAudits.map(audit =>
+                audit.id === auditId
+                ? {
+                    ...audit,
+                    assets: audit.assets.map(asset =>
+                        asset.serialNo === assetSerialNo ? { ...asset, auditStatus: newStatus, rejectionReason: '' } : asset
+                    ),
+                    }
+                : audit
+            )
+        );
+    }
+  };
+
+  // Function to simulate initiating sign-off report
+  const handleInitiateReport = (auditId) => {
+    setAudits(prevAudits =>
+      prevAudits.map(audit =>
+        audit.id === auditId
+          ? { ...audit, overallStatus: 'Report Initiated' }
+          : audit
+      )
+    );
+    setNotification({message: 'Audit sign-off report initiated. Audit is now locked.', type: 'success'});
+  };
+  
+  // Function to handle creating a new audit
+  const handleCreateNewAudit = (newAudit) => {
+    setAudits(prevAudits => [...prevAudits, newAudit]);
+    setCurrentView('list'); // Go to list view after creating
+    setNotification({message: 'New audit profile created successfully!', type: 'success'});
+  };
+
+  // Function to handle fetching dummy inventory from CRM
+  const handleFetchInventory = (auditId) => {
+    setAudits(prevAudits =>
+      prevAudits.map(audit => {
+        if (audit.id === auditId) {
+          // Only fetch if currently in 'Inventory Pending' or empty assets
+          if (audit.overallStatus === 'Inventory Pending' || audit.assets.length === 0) {
+            setNotification({message: `Inventory fetched for ${audit.id}.`, type: 'success'});
+            return {
+              ...audit,
+              assets: dummyFetchedInventory, // Populate with dummy data
+              overallStatus: 'Audit In Progress', // Change status after fetching
+            };
+          } else {
+            setNotification({message: 'Inventory already loaded or audit in progress.', type: 'error'});
+            return audit;
+          }
+        }
+        return audit;
+      })
+    );
+  };
+
+  // Filtering logic for the list view
+  const filteredAudits = audits.filter(audit => {
+      const matchesSearch = searchTerm === '' || 
+          audit.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
+          audit.locationName.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = filterStatus === 'All' || audit.overallStatus === filterStatus;
+      return matchesSearch && matchesStatus;
+  });
+
+  const renderContent = () => {
+      switch (currentView) {
+          case 'home':
+              return (
+                  <main className="bg-white p-6 sm:p-8 rounded-lg shadow-md max-w-4xl mx-auto text-center">
+                    <h2 className="text-3xl font-semibold text-gray-800 mb-4">Inventory Audit Module</h2>
+                    <p className="text-gray-600 mb-8 max-w-2xl mx-auto">Manage and track all inventory audits. Create new profiles, approve assets, and generate final reports.</p>
+                    <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                      <button onClick={() => setCurrentView('list')} className="bg-indigo-600 text-white px-8 py-3 rounded-lg shadow-md hover:bg-indigo-700 transition-transform transform hover:scale-105 duration-200 text-lg font-medium">View All Audits</button>
+                      <button onClick={() => setCurrentView('create-audit')} className="bg-green-500 text-white px-8 py-3 rounded-lg shadow-md hover:bg-green-600 transition-transform transform hover:scale-105 duration-200 text-lg font-medium">Create New Audit Profile</button>
+                    </div>
+                  </main>
+              );
+          case 'list':
+              return (
+                <main className="bg-white p-6 rounded-lg shadow-md">
+                  <h2 className="text-2xl font-semibold text-gray-800 mb-6">Inventory Audit List</h2>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+                    <div className="bg-blue-100 p-4 rounded-lg shadow-sm text-center"><p className="text-sm text-blue-700 font-medium">Total Audits</p><p className="text-2xl font-bold text-blue-900">{totalAudits}</p></div>
+                    <div className="bg-yellow-100 p-4 rounded-lg shadow-sm text-center"><p className="text-sm text-yellow-700 font-medium">In Progress</p><p className="text-2xl font-bold text-yellow-900">{inProgressAudits}</p></div>
+                    <div className="bg-orange-100 p-4 rounded-lg shadow-sm text-center"><p className="text-sm text-orange-700 font-medium">Pending Approval</p><p className="text-2xl font-bold text-orange-900">{pendingApprovalAudits}</p></div>
+                    <div className="bg-purple-100 p-4 rounded-lg shadow-sm text-center"><p className="text-sm text-purple-700 font-medium">Ready for Report</p><p className="text-2xl font-bold text-purple-900">{readyForReportAudits}</p></div>
+                    <div className="bg-green-100 p-4 rounded-lg shadow-sm text-center"><p className="text-sm text-green-700 font-medium">Completed</p><p className="text-2xl font-bold text-green-900">{completedAudits}</p></div>
+                    <div className="bg-red-100 p-4 rounded-lg shadow-sm text-center"><p className="text-sm text-red-700 font-medium">Rejected</p><p className="text-2xl font-bold text-red-900">{rejectedAudits}</p></div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                    <input type="text" placeholder="Search by Audit ID or Location" className="flex-grow p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                    <select className="p-3 border border-gray-300 rounded-md bg-white focus:ring-indigo-500 focus:border-indigo-500" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                      <option value="All">Filter by Status (All)</option>
+                      <option value="Inventory Pending">Inventory Pending</option>
+                      <option value="Audit In Progress">Audit In Progress</option>
+                      <option value="Ready for Report">Ready for Report</option>
+                      <option value="Pending Approval">Pending Approval</option>
+                      <option value="Report Initiated">Report Initiated</option>
+                      <option value="Approved">Approved</option>
+                      <option value="Rejected">Rejected</option>
+                    </select>
+                  </div>
+                  <div className="overflow-x-auto rounded-lg border border-gray-200">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Audit ID</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KAE Name</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dates</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {filteredAudits.map(audit => (
+                          <tr key={audit.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{audit.id}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{audit.locationName} ({audit.locationSapCode})</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{audit.kaeName}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{audit.startDate} to {audit.endDate}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                audit.overallStatus === 'Ready for Report' ? 'bg-purple-100 text-purple-800' :
+                                audit.overallStatus === 'Pending Approval' || audit.overallStatus === 'Report Initiated' ? 'bg-orange-100 text-orange-800' :
+                                audit.overallStatus === 'Audit In Progress' || audit.overallStatus === 'Inventory Pending' ? 'bg-yellow-100 text-yellow-800' :
+                                audit.overallStatus === 'Rejected' ? 'bg-red-100 text-red-800' :
+                                audit.overallStatus === 'Approved' ? 'bg-green-100 text-green-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>{audit.overallStatus}</span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <button onClick={() => { setSelectedAuditId(audit.id); setCurrentView('detail'); }} className="text-indigo-600 hover:text-indigo-900 px-3 py-1 bg-indigo-50 rounded-md hover:bg-indigo-100 transition-colors duration-200">View Details</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </main>
+              );
+          case 'create-audit':
+                return <CreateAuditForm onAuditCreate={handleCreateNewAudit} onCancelCreate={() => setCurrentView('home')} mockLocations={mockLocations} existingAudits={audits} />;
+          case 'detail':
+              const audit = audits.find(audit => audit.id === selectedAuditId);
+              if (!audit) return null;
+              return (
+                <main className="bg-white p-6 rounded-lg shadow-md">
+                    <button onClick={() => { setSelectedAuditId(null); setCurrentView('list'); }} className="mb-6 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors duration-200 flex items-center">
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                      Back to Audit List
+                    </button>
+                    <h2 className="text-2xl font-semibold text-gray-800 mb-6">Audit Details: {audit.id}</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mb-8 p-4 bg-gray-50 rounded-lg border">
+                      <div><strong className="text-gray-700">Location:</strong> {audit.locationName} ({audit.locationSapCode})</div>
+                      <div><strong className="text-gray-700">KAE Name:</strong> {audit.kaeName}</div>
+                      <div><strong className="text-gray-700">KAM Name:</strong> {audit.kamName}</div>
+                      <div><strong className="text-gray-700">Audit Dates:</strong> {audit.startDate} to {audit.endDate}</div>
+                      <div className="md:col-span-2"><strong className="text-gray-700">Audit Type:</strong> {audit.auditType}</div>
+                      <div className="md:col-span-2 flex items-center">
+                        <strong className="text-gray-700 mr-2">Overall Status:</strong>
+                        <span className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${
+                          audit.overallStatus === 'Ready for Report' ? 'bg-purple-100 text-purple-800' :
+                          audit.overallStatus === 'Pending Approval' || audit.overallStatus === 'Report Initiated' ? 'bg-orange-100 text-orange-800' :
+                          audit.overallStatus === 'Audit In Progress' || audit.overallStatus === 'Inventory Pending' ? 'bg-yellow-100 text-yellow-800' :
+                          audit.overallStatus === 'Rejected' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>{audit.overallStatus}</span>
+                      </div>
+                    </div>
+                    
+                    <h3 className="text-xl font-semibold text-gray-800 mb-4">Inventory Management</h3>
+                    <div className="flex flex-col sm:flex-row gap-4 mb-6 items-start">
+                        <button onClick={() => handleFetchInventory(audit.id)} className="bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition-colors duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled={audit.assets.length > 0 && audit.overallStatus !== 'Inventory Pending'}>Fetch CRM Inventory</button>
+                        <div className="flex items-center space-x-2">
+                           <button className="bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600 transition-colors duration-200 shadow-sm">Upload Audit Inventory (.xlsx)</button>
+                           <button className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors duration-200 text-sm">Download Template</button>
+                        </div>
+                    </div>
+
+                    <h3 className="text-xl font-semibold text-gray-800 mb-4">Assets in this Audit</h3>
+                    <div className="overflow-x-auto rounded-lg border border-gray-200 mb-8">
+                      {audit.assets.length > 0 ? (
+                        <table className="min-w-full divide-y divide-gray-200">
+                           <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial No.</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset Details</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Audit Status</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Photo</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {audit.assets.map(asset => (
+                              <tr key={asset.serialNo} className="hover:bg-gray-50">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{asset.serialNo}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{asset.category} - {asset.make} / {asset.model}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600"><span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${asset.auditStatus === 'Asset Verified' ? 'bg-green-100 text-green-800' : asset.auditStatus.includes('Pending') || asset.auditStatus === 'Verification Pending' ? 'bg-orange-100 text-orange-800' : asset.auditStatus === 'Audit Pending' ? 'bg-yellow-100 text-yellow-800' : asset.auditStatus === 'Asset Mismatch' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>{asset.auditStatus}</span></td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{asset.photoUrl ? <img src={asset.photoUrl} onError={(e) => { e.target.onerror = null; e.target.src='https://placehold.co/40x40/e0e0e0/333?text=N/A'; }} alt="Asset" className="w-10 h-10 rounded-md object-cover border"/> : 'N/A'}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                  {asset.auditStatus.includes('Pending Approval') || asset.auditStatus === 'Verification Pending' ? (<div className="flex gap-2"><button onClick={() => handleAssetApproval(audit.id, asset.serialNo, 'Asset Verified')} className="text-green-600 hover:text-green-900 px-3 py-1 bg-green-50 rounded-md hover:bg-green-100">Approve</button><button onClick={() => handleAssetApproval(audit.id, asset.serialNo, 'Asset Mismatch')} className="text-red-600 hover:text-red-900 px-3 py-1 bg-red-50 rounded-md hover:bg-red-100">Reject</button></div>) : (<span className="text-gray-400">N/A</span>)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium"><button onClick={() => handleViewAssetDetails(asset)} className="text-blue-600 hover:text-blue-900 px-3 py-1 bg-blue-50 rounded-md hover:bg-blue-100">View</button></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <div className="p-6 text-center text-gray-500">No assets loaded. Click "Fetch CRM Inventory" or "Upload Audit Inventory".</div>
+                      )}
+                    </div>
+                </main>
+              );
+          default:
+              return <div>Error: View not found</div>;
+      }
+  };
+
+
+  return (
+    <div className="min-h-screen p-4 antialiased">
+      <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification({message: '', type:''})} />
+      
+      <header className="bg-white shadow-md rounded-lg p-4 mb-6 flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-800">CRM Inventory Audit</h1>
+        <div className="space-x-2 sm:space-x-4">
+          <button onClick={() => setCurrentView('home')} className={`px-3 py-2 sm:px-4 text-sm font-medium rounded-md transition-colors duration-200 ${currentView === 'home' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>Home</button>
+          <button onClick={() => setCurrentView('list')} className={`px-3 py-2 sm:px-4 text-sm font-medium rounded-md transition-colors duration-200 ${currentView === 'list' || currentView === 'detail' || currentView === 'create-audit' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>Audit List</button>
+        </div>
+      </header>
+
+      {renderContent()}
+
+      {/* Render Modals */}
+      {showAssetDetailsModal && (<AssetDetailsModal asset={selectedAssetForDetails} onClose={handleCloseAssetDetailsModal}/>)}
+      {showRejectionReasonModal && (<RejectionReasonModal assetSerialNo={assetToRejectSerialNo} onConfirm={handleConfirmRejection} onCancel={handleCancelRejection}/>)}
+    </div>
+  );
+};
+
+// Mount the React app to the DOM
+const container = document.getElementById('root');
+const root = ReactDOM.createRoot(container);
+root.render(<App />);
+
+    </script>
+</body>
+</html>
